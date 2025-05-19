@@ -70,6 +70,25 @@ staged changes."
   :type 'string
   :group 'gptel-magit)
 
+(custom-declare-variable 'gptel-magit-model nil
+  "The gptel model to use, defaults to `gptel-model` if nil.
+
+See `gptel-model` for documentation.
+
+If set to a model that uses a different backend than
+`gptel-backend`, also requires `gptel-magit-backend' to be set to
+the correct backend."
+     :type (get 'gptel-model 'custom-type)
+     :group 'gptel-magit)
+
+(custom-declare-variable 'gptel-magit-backend nil
+ "The gptel backend to use, defaults to `gptel-backend` if nil.
+
+See `gptel-backend` for documentation."
+  :type (get 'gptel-backend 'custom-type)
+  :group 'gptel-magit)
+
+
 (defun gptel-magit--format-response (message)
   "Format commit message MESSAGE nicely."
   (with-temp-buffer
@@ -82,13 +101,15 @@ staged changes."
 (defun gptel-magit--request (diff callback)
   "Request a commit message for DIFF, invoking CALLBACK when done.
 CALLBACK will be applied to the generated commit message string."
-  (gptel-request diff
-    :system gptel-magit-commit-prompt
-    :context nil
-    :callback (lambda (response _info)
-                (let ((msg (gptel-magit--format-response response)))
-                  (message msg)
-                  (funcall callback msg)))))
+  (let* ((gptel-backend (or gptel-magit-backend gptel-backend))
+         (gptel-model (or gptel-magit-model gptel-model)))
+    (gptel-request diff
+      :system gptel-magit-commit-prompt
+      :context nil
+      :callback (lambda (response _info)
+                  (let ((msg (gptel-magit--format-response response)))
+                    (message msg)
+                    (funcall callback msg))))))
 
 (defun gptel-magit--generate (callback)
   "Generate a commit message for current magit repo.
