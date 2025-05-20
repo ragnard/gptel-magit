@@ -1,9 +1,15 @@
 #+title: gptel-magit: LLM functionality for magit
 
-[[https://stable.melpa.org/#/gptel-magit][file:https://stable.melpa.org/packages/gptel-magit-badge.svg]]
-[[https://melpa.org/#/gptel-magit][file:https://melpa.org/packages/gptel-magit-badge.svg]]
+[[https://stable.melpa.org/#/gptel-magit][file:https://melpa.org/packages/gptel-magit-badge.svg]]
 
-Generate commit messages in magit using gptel.
+Uses the fantastic [[https://github.com/karthink/gptel][gptel]] to
+extend the equally fantastic [[https://magit.vc/][magit]] with some
+LLM-powered functionality.
+
+Functionality is provided for:
+
+- Generating commit messages
+- Explaining diffs
 
 * Installation
 
@@ -18,13 +24,22 @@ time, for example:
 
 * Usage
 
+** Commit messages
+
 You can generate a commit message in two ways:
 
 1. In the magit transient commit buffer, you can press =g= to create a
-   commit with a pre-*g*enerated message.
-2. In a already started git-commit buffer, you can press =M-g= to
-   *g*enerate a message.
+   commit with a pre-generated message.
+2. In an already started git-commit buffer, you can press =M-g= to
+   generate a message.
+
+** Diff explanation
+
+With the cursor placed on a magit diff section, you can request an
+explanation by pressing =d= (to invoke the diff action), and then =x=.
+
 
 * Customisation
 
-You can tweak the prompt used by customising =gptel-magit-commit-prompt=.
+Prompts, and some other options can be customised, see
+`customize-group magit-gptel`.

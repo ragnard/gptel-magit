@@ -70,26 +70,35 @@ staged changes."
   :type 'string
   :group 'gptel-magit)
 
-(custom-declare-variable 'gptel-magit-model nil
-  "The gptel model to use, defaults to `gptel-model` if nil.
+(defcustom gptel-magit-diff-explain-prompt
+  "You are an expert at understanding and explaining code changes by reading diff output. Your job is to write a short clear summary explanation of the changes the changes. Answer in Markdown format."
+  "The prompt to use for explaining diff changes.
+The prompt should consider that the input will be a diff some changes."
+  :type 'string
+  :group 'gptel-magit)
+
+(custom-declare-variable
+ 'gptel-magit-model nil
+ "The gptel model to use, defaults to `gptel-model` if nil.
 
 See `gptel-model` for documentation.
 
 If set to a model that uses a different backend than
 `gptel-backend`, also requires `gptel-magit-backend' to be set to
 the correct backend."
-     :type (get 'gptel-model 'custom-type)
-     :group 'gptel-magit)
+ :type (get 'gptel-model 'custom-type)
+ :group 'gptel-magit)
 
-(custom-declare-variable 'gptel-magit-backend nil
+(custom-declare-variable
+ 'gptel-magit-backend nil
  "The gptel backend to use, defaults to `gptel-backend` if nil.
 
 See `gptel-backend` for documentation."
-  :type (get 'gptel-backend 'custom-type)
-  :group 'gptel-magit)
+ :type (get 'gptel-backend 'custom-type)
+ :group 'gptel-magit)
 
 
-(defun gptel-magit--format-response (message)
+(defun gptel-magit--format-commit-message (message)
   "Format commit message MESSAGE nicely."
   (with-temp-buffer
     (insert message)
@@ -98,24 +107,25 @@ See `gptel-backend` for documentation."
     (fill-region (point-min) (point-max))
     (buffer-string)))
 
-(defun gptel-magit--request (diff callback)
-  "Request a commit message for DIFF, invoking CALLBACK when done.
-CALLBACK will be applied to the generated commit message string."
+(defun gptel-magit--request (&rest args)
+  "Call `gptel-request` with ARGS.
+
+Respects configured model/backend options."
+  (declare (indent 1))
   (let* ((gptel-backend (or gptel-magit-backend gptel-backend))
          (gptel-model (or gptel-magit-model gptel-model)))
-    (gptel-request diff
-      :system gptel-magit-commit-prompt
-      :context nil
-      :callback (lambda (response _info)
-                  (let ((msg (gptel-magit--format-response response)))
-                    (message msg)
-                    (funcall callback msg))))))
+    (apply #'gptel-request args)))
 
 (defun gptel-magit--generate (callback)
   "Generate a commit message for current magit repo.
 Invokes CALLBACK with the generated message when done."
   (let ((diff (magit-git-output "diff" "--cached")))
-    (gptel-magit--request diff callback)))
+    (gptel-magit--request diff
+      :system gptel-magit-commit-prompt
+      :context nil
+      :callback (lambda (response _info)
+                  (let ((msg (gptel-magit--format-commit-message response)))
+                    (funcall callback msg))))))
 
 (defun gptel-magit-generate-message ()
   "Generate a commit message when in the git commit buffer."
@@ -138,13 +148,46 @@ Uses ARGS from transient mode."
      (magit-commit-create (append args `("--message" ,message "--edit")))))
   (message "magit-gptel: Generating commit..."))
 
+(defun gptel-magit--show-diff-explain (text)
+  "Popup a buffer with diff explanation TEXT."
+  (let ((buffer-name "*gptel-magit diff-explain*"))
+    (when-let ((existing-buffer (get-buffer buffer-name)))
+      (kill-buffer existing-buffer))
+    (let ((buffer (get-buffer-create buffer-name)))
+      (with-current-buffer buffer
+        (insert text)
+        (setq fill-column 72)
+        (fill-region (point-min) (point-max))
+        (markdown-view-mode)
+        (goto-char (point-min)))
+      (pop-to-buffer buffer))))
+
+(defun gptel-magit--do-diff-request (diff)
+  "Send request for an explanation of DIFF."
+  (gptel-magit--request diff
+    :system gptel-magit-diff-explain-prompt
+    :context nil
+    :callback (lambda (response _info)
+                (gptel-magit--show-diff-explain response)))
+  (message "magit-gptel: Explaining diff..."))
+
+(defun gptel-magit-diff-explain ()
+  "Ask for an explanation of diff at current section."
+  (interactive)
+  (when-let* ((section (magit-current-section))
+              (start (oref section content))
+              (end (oref section end))
+              (content (buffer-substring start end)))
+    (gptel-magit--do-diff-request content)))
+
 ;;;###autoload
 (defun gptel-magit-install ()
   "Install gptel-magit functionality."
   (define-key git-commit-mode-map (kbd "M-g") 'gptel-magit-generate-message)
   (transient-append-suffix 'magit-commit #'magit-commit-create
-    '("g" "Generate commit" gptel-magit-commit-generate)))
-
+    '("g" "Generate commit" gptel-magit-commit-generate))
+  (transient-append-suffix 'magit-diff #'magit-stash-show
+    '("x" "Explain" gptel-magit-diff-explain)))
 
 (provide 'gptel-magit)
 ;;; gptel-magit.el ends here
