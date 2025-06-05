@@ -171,14 +171,17 @@ Uses ARGS from transient mode."
                 (gptel-magit--show-diff-explain response)))
   (message "magit-gptel: Explaining diff..."))
 
-(defun gptel-magit-diff-explain ()
+(defun gptel-magit-diff-explain (&optional arg)
   "Ask for an explanation of diff at current section."
-  (interactive)
-  (when-let* ((section (magit-current-section))
-              (start (oref section content))
-              (end (oref section end))
-              (content (buffer-substring start end)))
-    (gptel-magit--do-diff-request content)))
+  (interactive "P")
+  (if arg
+      (when-let* ((content (buffer-string)))
+        (gptel-magit--do-diff-request content))
+    (when-let* ((section (magit-current-section))
+                (start (oref section content))
+                (end (oref section end))
+                (content (buffer-substring start end)))
+      (gptel-magit--do-diff-request content))))
 
 ;;;###autoload
 (defun gptel-magit-install ()
