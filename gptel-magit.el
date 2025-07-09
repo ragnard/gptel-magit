@@ -104,7 +104,9 @@ See `gptel-backend` for documentation."
     (insert message)
     (text-mode)
     (setq fill-column git-commit-summary-max-length)
-    (fill-region (point-min) (point-max))
+    (goto-char (point-min))
+    (let ((end-of-first-line (progn (end-of-line) (point))))
+      (fill-region (point-min) end-of-first-line))
     (buffer-string)))
 
 (defun gptel-magit--request (&rest args)
