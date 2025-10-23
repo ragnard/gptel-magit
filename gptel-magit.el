@@ -105,6 +105,12 @@ See `gptel-backend` for documentation."
  :group 'gptel-magit)
 
 
+(defvar gptel-magit-rationale-buffer "*gptel-magit Rationale*"
+  "Buffer name for entering rationale for commit message generation.")
+
+(defvar gptel-magit--current-commit-buffer nil
+  "Buffer where commit message is being generated.")
+
 (defun gptel-magit--format-commit-message (message)
   "Format commit message MESSAGE nicely."
   (with-temp-buffer
@@ -136,11 +142,15 @@ Respects configured model/backend options."
          (gptel-model (or gptel-magit-model gptel-model)))
     (apply #'gptel-request args)))
 
-(defun gptel-magit--generate (callback)
+(defun gptel-magit--generate (callback &optional rationale)
   "Generate a commit message for current magit repo.
-Invokes CALLBACK with the generated message when done."
-  (let ((diff (magit-git-output "diff" "--cached")))
-    (gptel-magit--request diff
+Invokes CALLBACK with the generated message when done.
+Optional RATIONALE provides context for why the change was made."
+  (let* ((diff (magit-git-output "diff" "--cached"))
+         (prompt (if (and rationale (not (string-empty-p rationale)))
+                     (format "Why this change was made: %s\n\nCode changes:\n%s" rationale diff)
+                   diff)))
+    (gptel-magit--request prompt
       :system (gptel-magit--get-commit-prompt)
       :context nil
       :callback (lambda (response _info)
@@ -202,12 +212,102 @@ Uses ARGS from transient mode."
               (content (buffer-substring start end)))
     (gptel-magit--do-diff-request content)))
 
+(define-derived-mode gptel-magit-rationale-mode text-mode "gptel-magit-Rationale"
+  "Mode for entering commit rationale before generating commit message."
+  (local-set-key (kbd "C-c C-c") #'gptel-magit--submit-rationale)
+  (local-set-key (kbd "C-c C-k") #'gptel-magit--cancel-rationale))
+
+(defun gptel-magit--setup-rationale-buffer ()
+  "Setup the rationale buffer with proper guidance."
+  (let ((inhibit-read-only t))
+    (erase-buffer)
+    (insert ";;; WHY are you making these changes? (optional)\n")
+    (insert ";;; Press C-c C-c to generate commit message, C-c C-k to cancel\n")
+    (insert ";;; Leave empty to generate without rationale\n")
+    (insert ";;; ────────────────────────────────────────────────────────\n")
+    (add-text-properties (point-min) (point)
+                         '(face font-lock-comment-face read-only t))
+    (insert "\n")
+    (goto-char (point-max))))
+
+(defun gptel-magit--submit-rationale ()
+  "Submit the rationale buffer content and proceed with commit generation."
+  (interactive)
+  (let ((rationale (string-trim
+                    (buffer-substring-no-properties
+                     (save-excursion
+                       (goto-char (point-min))
+                       (while (and (not (eobp))
+                                   (get-text-property (point) 'read-only))
+                         (forward-char))
+                       (point))
+                     (point-max)))))
+    (quit-window t)
+    (gptel-magit--generate
+     (lambda (message)
+       (with-current-buffer gptel-magit--current-commit-buffer
+         (save-excursion
+           (goto-char (point-min))
+           (insert message))))
+     rationale)
+    (message "magit-gptel: Generating commit message with rationale...")))
+
+(defun gptel-magit--cancel-rationale ()
+  "Cancel rationale input and abort commit generation."
+  (interactive)
+  (quit-window t)
+  (message "Commit generation canceled."))
+
+(defun gptel-magit-generate-message-with-rationale ()
+  "Generate a commit message with rationale when in the git commit buffer."
+  (interactive)
+  (unless (magit-commit-message-buffer)
+    (user-error "No commit in progress"))
+  (setq gptel-magit--current-commit-buffer (magit-commit-message-buffer))
+  (let ((buffer (get-buffer-create gptel-magit-rationale-buffer)))
+    (with-current-buffer buffer
+      (gptel-magit-rationale-mode)
+      (gptel-magit--setup-rationale-buffer))
+    (pop-to-buffer buffer)))
+
+(defun gptel-magit-commit-generate-with-rationale (&optional args)
+  "Create a new commit with a generated commit message with rationale.
+Uses ARGS from transient mode."
+  (interactive (list (magit-commit-arguments)))
+  (setq gptel-magit--current-commit-buffer nil)
+  (let ((buffer (get-buffer-create gptel-magit-rationale-buffer)))
+    (with-current-buffer buffer
+      (gptel-magit-rationale-mode)
+      (gptel-magit--setup-rationale-buffer)
+      (local-set-key (kbd "C-c C-c")
+                     (lambda ()
+                       (interactive)
+                       (let ((rationale (string-trim
+                                         (buffer-substring-no-properties
+                                          (save-excursion
+                                            (goto-char (point-min))
+                                            (while (and (not (eobp))
+                                                        (get-text-property (point) 'read-only))
+                                              (forward-char))
+                                            (point))
+                                          (point-max)))))
+                         (quit-window t)
+                         (gptel-magit--generate
+                          (lambda (message)
+                            (magit-commit-create (append args `("--message" ,message "--edit"))))
+                          rationale)
+                         (message "magit-gptel: Generating commit with rationale...")))))
+    (pop-to-buffer buffer)))
+
 ;;;###autoload
 (defun gptel-magit-install ()
   "Install gptel-magit functionality."
   (define-key git-commit-mode-map (kbd "M-g") 'gptel-magit-generate-message)
+  (define-key git-commit-mode-map (kbd "M-r") 'gptel-magit-generate-message-with-rationale)
   (transient-append-suffix 'magit-commit #'magit-commit-create
     '("g" "Generate commit" gptel-magit-commit-generate))
+  (transient-append-suffix 'magit-commit #'gptel-magit-commit-generate
+    '("r" "Generate with rationale" gptel-magit-commit-generate-with-rationale))
   (transient-append-suffix 'magit-diff #'magit-stash-show
     '("x" "Explain" gptel-magit-diff-explain)))
 
