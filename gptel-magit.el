@@ -77,6 +77,17 @@ The prompt should consider that the input will be a diff some changes."
   :type 'string
   :group 'gptel-magit)
 
+(defcustom gptel-magit-streaming t
+  "Enable streaming responses when contacting the LLM.
+
+When non-nil, gptel-magit will request streaming and insert chunks
+incrementally into the commit buffer. When nil, gptel-magit will
+request a non-streaming response and only call the callback once the
+final message is available.
+Note: that streaming availability also depends on backend/model"
+  :type 'boolean
+  :group 'gptel-magit)
+
 (custom-declare-variable
  'gptel-magit-model nil
  "The gptel model to use, defaults to `gptel-model` if nil.
@@ -120,23 +131,67 @@ Respects configured model/backend options."
   "Generate a commit message for current magit repo.
 Invokes CALLBACK with the generated message when done."
   (let ((diff (magit-git-output "diff" "--cached")))
-    (gptel-magit--request diff
-      :system gptel-magit-commit-prompt
-      :context nil
-      :callback (lambda (response _info)
-                  (let ((msg (gptel-magit--format-commit-message response)))
-                    (funcall callback msg))))))
+    ;; Accumulate chunks in `acc'. If a commit buffer exists, insert chunks there and
+    ;; avoid calling CALLBACK (to prevent duplicate insertions).
+    (let ((acc "")
+          start-marker end-marker
+          in-commit-buffer)
+      (setq in-commit-buffer (magit-commit-message-buffer))
+      (when in-commit-buffer
+        (with-current-buffer in-commit-buffer
+          (setq start-marker (set-marker (make-marker) (point-min) (current-buffer)))
+          (setq end-marker (copy-marker start-marker))))
+
+      (gptel-magit--request diff
+        :system gptel-magit-commit-prompt
+        :context nil
+        :stream gptel-magit-streaming
+        :callback
+        (lambda (response info)
+          (cond
+           ;; Text chunk
+           ((stringp response)
+            (setq acc (concat acc response))
+            (if in-commit-buffer
+                ;; Insert raw chunk into commit buffer; don't call CALLBACK now.
+                (when (and start-marker (marker-buffer start-marker) (buffer-live-p (marker-buffer start-marker)))
+                  (with-current-buffer (marker-buffer start-marker)
+                    (save-excursion
+                      (goto-char (marker-position end-marker))
+                      (insert response)
+                      (set-marker end-marker (point) (current-buffer)))))
+              ;; Not in commit buffer: if backend doesn't stream, treat this as final.
+              (unless (plist-get info :stream)
+                (let ((msg (gptel-magit--format-commit-message acc)))
+                  (funcall callback msg)))))
+
+           ;; End-of-stream indicator
+           ((eq response t)
+            (let ((msg (gptel-magit--format-commit-message acc)))
+              (if in-commit-buffer
+                  ;; Replace raw inserted chunks with formatted message and do not call CALLBACK.
+                  (when (and start-marker end-marker (marker-buffer start-marker) (buffer-live-p (marker-buffer start-marker)))
+                    (with-current-buffer (marker-buffer start-marker)
+                      (save-excursion
+                        (goto-char (marker-position start-marker))
+                        (delete-region (marker-position start-marker) (marker-position end-marker))
+                        (insert msg))))
+                ;; Not in commit buffer: deliver final message to CALLBACK.
+                (funcall callback msg))))
+
+           ;; Abort or other non-string responses.
+           ((eq response 'abort)
+            (unless in-commit-buffer
+              (funcall callback nil)))
+
+           (t nil)))))))
 
 (defun gptel-magit-generate-message ()
   "Generate a commit message when in the git commit buffer."
   (interactive)
   (unless (magit-commit-message-buffer)
     (user-error "No commit in progress"))
-  (gptel-magit--generate (lambda (message)
-                           (with-current-buffer (magit-commit-message-buffer)
-                             (save-excursion
-                               (goto-char (point-min))
-                               (insert message)))))
+  (gptel-magit--generate (lambda (_message) nil))
   (message "magit-gptel: Generating commit message..."))
 
 (defun gptel-magit-commit-generate (&optional args)
