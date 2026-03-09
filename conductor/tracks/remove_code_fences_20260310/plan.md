@@ -4,20 +4,19 @@
 
 - [ ] Task: Create test file `gptel-magit-tests.el`
     - [ ] Initialize the test file with necessary requires (`ert`, `gptel-magit`).
-- [ ] Task: Implement failing tests for code fence removal
-    - [ ] Write a test case for triple backtick code fences (` ``` `).
-    - [ ] Write a test case for single backtick code fences (`` ` ``).
-    - [ ] Write a test case for messages with leading/trailing whitespace.
-    - [ ] Write a test case for messages that combine fences and whitespace.
+- [ ] Task: Implement failing tests for triple backtick removal
+    - [ ] Write a test case for triple backtick code fences (` ``` `) wrapping the entire message.
+    - [ ] Write a test case for messages with leading/trailing whitespace around triple fences.
+    - [ ] Write a test case that includes single backticks (`` ` ``) *inside* the message, ensuring they are preserved.
     - [ ] **CRITICAL:** Run tests and confirm they fail.
 - [ ] Task: Conductor - User Manual Verification 'Phase 1: Test Infrastructure and Initial Failing Tests' (Protocol in workflow.md)
 
 ## Phase 2: Implementation and Verification
 
-- [ ] Task: Refine `gptel-magit--format-commit-message` to strip fences and whitespace
-    - [ ] Implement logic to remove triple backtick fences.
-    - [ ] Implement logic to remove single backtick fences.
+- [ ] Task: Refine `gptel-magit--format-commit-message` to strip triple fences and whitespace
+    - [ ] Implement logic to remove only triple backtick fences.
     - [ ] Implement logic to trim leading/trailing whitespace.
+    - [ ] Ensure that single backticks are *not* removed.
     - [ ] Ensure the existing filling logic is preserved and correctly applied to the cleaned message.
 - [ ] Task: Verify implementation with tests
     - [ ] Run the ERT test suite and ensure all tests in `gptel-magit-tests.el` pass.
