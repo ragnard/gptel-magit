@@ -13,7 +13,7 @@
 
 ## Phase 2: Implementation and Verification
 
-- [ ] Task: Refine `gptel-magit--format-commit-message` to strip triple fences and whitespace
+- [x] Task: Refine `gptel-magit--format-commit-message` to strip triple fences and whitespace [10565f4]
     - [ ] Implement logic to remove only triple backtick fences.
     - [ ] Implement logic to trim leading/trailing whitespace.
     - [ ] Ensure that single backticks are *not* removed.
