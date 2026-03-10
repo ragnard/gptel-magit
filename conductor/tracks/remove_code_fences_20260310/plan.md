@@ -11,7 +11,7 @@
     - [ ] **CRITICAL:** Run tests and confirm they fail.
 - [x] Task: Conductor - User Manual Verification 'Phase 1: Test Infrastructure and Initial Failing Tests' (Protocol in workflow.md) [65f653b]
 
-## Phase 2: Implementation and Verification
+## Phase 2: Implementation and Verification [checkpoint: e71c047]
 
 - [x] Task: Refine `gptel-magit--format-commit-message` to strip triple fences and whitespace [10565f4]
     - [ ] Implement logic to remove only triple backtick fences.
@@ -23,4 +23,4 @@
 - [x] Task: Quality Gate Check [10565f4]
     - [ ] Verify test coverage for the new logic.
     - [ ] Run `package-lint` on `gptel-magit.el` (if available).
-- [ ] Task: Conductor - User Manual Verification 'Phase 2: Implementation and Verification' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 2: Implementation and Verification' (Protocol in workflow.md) [e71c047]
