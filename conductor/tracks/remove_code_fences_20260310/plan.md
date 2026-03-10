@@ -1,6 +1,6 @@
 # Implementation Plan: remove_code_fences_20260310
 
-## Phase 1: Test Infrastructure and Initial Failing Tests
+## Phase 1: Test Infrastructure and Initial Failing Tests [checkpoint: 65f653b]
 
 - [x] Task: Create test file `gptel-magit-tests.el` [19eb629]
     - [ ] Initialize the test file with necessary requires (`ert`, `gptel-magit`).
@@ -9,7 +9,7 @@
     - [ ] Write a test case for messages with leading/trailing whitespace around triple fences.
     - [ ] Write a test case that includes single backticks (`` ` ``) *inside* the message, ensuring they are preserved.
     - [ ] **CRITICAL:** Run tests and confirm they fail.
-- [ ] Task: Conductor - User Manual Verification 'Phase 1: Test Infrastructure and Initial Failing Tests' (Protocol in workflow.md)
+- [x] Task: Conductor - User Manual Verification 'Phase 1: Test Infrastructure and Initial Failing Tests' (Protocol in workflow.md) [65f653b]
 
 ## Phase 2: Implementation and Verification
 
