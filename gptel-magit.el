@@ -99,9 +99,23 @@ See `gptel-backend` for documentation."
 
 
 (defun gptel-magit--format-commit-message (message)
-  "Format commit message MESSAGE nicely."
+  "Format commit message MESSAGE nicely.
+
+Strips triple backtick code fences and leading/trailing whitespace
+before applying `fill-region`."
   (with-temp-buffer
-    (insert message)
+    (insert (string-trim message))
+    ;; Remove triple backtick fences at start and end
+    (goto-char (point-min))
+    (while (re-search-forward "^```" nil t)
+      (replace-match ""))
+    (goto-char (point-max))
+    (while (re-search-backward "```$" nil t)
+      (replace-match ""))
+    ;; Trim again in case fences were surrounded by whitespace
+    (let ((content (string-trim (buffer-string))))
+      (erase-buffer)
+      (insert content))
     (text-mode)
     (setq fill-column git-commit-summary-max-length)
     (fill-region (point-min) (point-max))
