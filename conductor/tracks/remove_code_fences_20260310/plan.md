@@ -4,7 +4,7 @@
 
 - [x] Task: Create test file `gptel-magit-tests.el` [19eb629]
     - [ ] Initialize the test file with necessary requires (`ert`, `gptel-magit`).
-- [ ] Task: Implement failing tests for triple backtick removal
+- [x] Task: Implement failing tests for triple backtick removal [21ba876]
     - [ ] Write a test case for triple backtick code fences (` ``` `) wrapping the entire message.
     - [ ] Write a test case for messages with leading/trailing whitespace around triple fences.
     - [ ] Write a test case that includes single backticks (`` ` ``) *inside* the message, ensuring they are preserved.
