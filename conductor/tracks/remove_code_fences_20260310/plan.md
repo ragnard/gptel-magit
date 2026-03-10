@@ -18,7 +18,7 @@
     - [ ] Implement logic to trim leading/trailing whitespace.
     - [ ] Ensure that single backticks are *not* removed.
     - [ ] Ensure the existing filling logic is preserved and correctly applied to the cleaned message.
-- [ ] Task: Verify implementation with tests
+- [x] Task: Verify implementation with tests [10565f4]
     - [ ] Run the ERT test suite and ensure all tests in `gptel-magit-tests.el` pass.
 - [ ] Task: Quality Gate Check
     - [ ] Verify test coverage for the new logic.
