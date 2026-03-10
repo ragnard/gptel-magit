@@ -2,7 +2,7 @@
 
 ## Phase 1: Test Infrastructure and Initial Failing Tests
 
-- [ ] Task: Create test file `gptel-magit-tests.el`
+- [x] Task: Create test file `gptel-magit-tests.el` [19eb629]
     - [ ] Initialize the test file with necessary requires (`ert`, `gptel-magit`).
 - [ ] Task: Implement failing tests for triple backtick removal
     - [ ] Write a test case for triple backtick code fences (` ``` `) wrapping the entire message.
