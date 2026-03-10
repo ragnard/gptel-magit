@@ -20,7 +20,7 @@
     - [ ] Ensure the existing filling logic is preserved and correctly applied to the cleaned message.
 - [x] Task: Verify implementation with tests [10565f4]
     - [ ] Run the ERT test suite and ensure all tests in `gptel-magit-tests.el` pass.
-- [ ] Task: Quality Gate Check
+- [x] Task: Quality Gate Check [10565f4]
     - [ ] Verify test coverage for the new logic.
     - [ ] Run `package-lint` on `gptel-magit.el` (if available).
 - [ ] Task: Conductor - User Manual Verification 'Phase 2: Implementation and Verification' (Protocol in workflow.md)
