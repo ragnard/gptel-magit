@@ -1,8 +1,0 @@
-{
-  "track_id": "remove_code_fences_20260310",
-  "type": "feature",
-  "status": "new",
-  "created_at": "2026-03-10T14:30:00Z",
-  "updated_at": "2026-03-10T14:30:00Z",
-  "description": "Remove only the triple backtick code fences from LLM generated commit message. For example, \`\`\` feat(bar): blah blah \`\`\`. The {\`\`\`} triple backtick code fence and the leading or trailing SPACEs should be removed."
-}
