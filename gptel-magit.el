@@ -153,10 +153,16 @@ Optional RATIONALE provides context for why the change was made."
     (gptel-magit--request prompt
       :system (gptel-magit--get-commit-prompt)
       :context nil
-      :callback (lambda (response _info)
-                  (when (stringp response)
+      :callback (lambda (response info)
+                  (cond
+                   ((stringp response)
                     (let ((msg (gptel-magit--format-commit-message response)))
-                      (funcall callback msg)))))))
+                      (funcall callback msg)))
+                   ((and (consp response) (eq (car response) 'reasoning))
+                    nil) ; silently ignore reasoning traces
+                   ((null response)
+                    (message "gptel-magit: Empty response from LLM (%s)"
+                             (or (plist-get info :status) "unknown status"))))))))
 
 (defun gptel-magit-generate-message ()
   "Generate a commit message when in the git commit buffer."
@@ -198,9 +204,15 @@ Uses ARGS from transient mode."
   (gptel-magit--request diff
     :system gptel-magit-diff-explain-prompt
     :context nil
-    :callback (lambda (response _info)
-                (when (stringp response)
-                  (gptel-magit--show-diff-explain response))))
+    :callback (lambda (response info)
+                (cond
+                 ((stringp response)
+                  (gptel-magit--show-diff-explain response))
+                 ((and (consp response) (eq (car response) 'reasoning))
+                  nil)
+                 ((null response)
+                  (message "gptel-magit: Empty response from LLM (%s)"
+                           (or (plist-get info :status) "unknown status"))))))
   (message "magit-gptel: Explaining diff..."))
 
 (defun gptel-magit-diff-explain ()
