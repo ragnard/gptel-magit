@@ -123,9 +123,11 @@ Invokes CALLBACK with the generated message when done."
     (gptel-magit--request diff
       :system gptel-magit-commit-prompt
       :context nil
-      :callback (lambda (response _info)
-                  (let ((msg (gptel-magit--format-commit-message response)))
-                    (funcall callback msg))))))
+      :callback (lambda (response info)
+                  (if response
+                      (let ((msg (gptel-magit--format-commit-message response)))
+                        (funcall callback msg))
+                    (message "gptel-magit error: %s" (plist-get info :status)))))))
 
 (defun gptel-magit-generate-message ()
   "Generate a commit message when in the git commit buffer."
@@ -167,8 +169,10 @@ Uses ARGS from transient mode."
   (gptel-magit--request diff
     :system gptel-magit-diff-explain-prompt
     :context nil
-    :callback (lambda (response _info)
-                (gptel-magit--show-diff-explain response)))
+    :callback (lambda (response info)
+                (if response
+                    (gptel-magit--show-diff-explain response)
+                  (message "gptel-magit error: %s" (plist-get info :status)))))    
   (message "magit-gptel: Explaining diff..."))
 
 (defun gptel-magit-diff-explain ()
