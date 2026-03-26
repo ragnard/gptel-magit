@@ -20,8 +20,39 @@
 (require 'gptel)
 (require 'magit)
 
-(defconst gptel-magit-prompt-zed
-  "You are an expert at writing Git commits. Your job is to write a short clear commit message that summarizes the changes.
+(defcustom gptel-magit-commit-styles-alist
+  '(("GNU Style" . "You are an expert at writing Git commits in the GNU/Emacs ChangeLog style.
+Your job is to write a detailed, clear commit message that summarizes the changes with technical precision.
+
+### TRIVIAL CHANGES RULE:
+- If the change is trivial (e.g., fixing a typo, adjusting indentation, or purely cosmetic), START the commit message with a semicolon (;).
+- For trivial changes, provide only a concise one-line summary. 
+- Example: \"; gptel: Fix typo in docstring\"
+- DO NOT use the bulleted ChangeLog format for trivial changes.
+
+### FUNCTIONAL CHANGES RULE:
+
+For all non-trivial changes, use the following structure:
+
+    <component>: <short summary>
+
+    * <file-name> (<function-name>): <detailed description of changes>.
+    [optional additional entries for other files/functions]
+
+- MANDATORY: Use asterisk (*) ONLY at the start of a file entry. 
+- MANDATORY: Indent continuation lines. NEVER start a line with an asterisk unless it's a NEW file/function.
+- DO NOT repeat the filename at the end of paragraphs.
+- The first line (subject) MUST start with the component or file prefix followed by a colon.
+- The subject line MUST be in the imperative mood and max 66 characters.
+- DO NOT use conventional commit prefixes like fix: or feat:.
+- The body MUST use the ChangeLog format: asterisk, filename, function name in parentheses, and the \"why/how\".
+- FORMATTING: Indent continuation lines and do not repeat the filename at the end of the description.
+- If multiple functions or files changed, provide a separate bullet point for each.
+- Do not end the subject line with any punctuation.
+- Use a professional, technical, and descriptive tone.")
+    ;; "Prompt string for GNU-style commit messages with trivial change support."
+    ;;A prompt adapted from Zed (https://github.com/zed-industries/zed/blob/main/crates/git_ui/src/commit_message_prompt.).
+    ("ZED Style" . "You are an expert at writing Git commits. Your job is to write a short clear commit message that summarizes the changes.
 
 If you can accurately express the change in just the subject line, don't include anything in the message body. Only use the body when it is providing *useful* information.
 
@@ -37,11 +68,9 @@ Follow good Git style:
 - Do not end the subject line with any punctuation
 - Use the imperative mood in the subject line
 - Wrap the body at 68 characters
-- Keep the body short and concise (omit it entirely if not useful)"
-  "A prompt adapted from Zed (https://github.com/zed-industries/zed/blob/main/crates/git_ui/src/commit_message_prompt.txt).")
-
-(defconst gptel-magit-prompt-conventional-commits
-  "You are an expert at writing Git commits. Your job is to write a short clear commit message that summarizes the changes.
+- Keep the body short and concise (omit it entirely if not useful)")
+    ;;A prompt adapted from Conventional Commits (https://www.conventionalcommits.org/en/v1.0.0/).
+    ("Conventional Commits" . "You are an expert at writing Git commits. Your job is to write a short clear commit message that summarizes the changes.
 
 The commit message should be structured as follows:
 
@@ -59,11 +88,36 @@ The commit message should be structured as follows:
 - Do not end the subject line with any punctuation
 - A longer commit body MAY be provided after the short description, providing additional contextual information about the code changes. The body MUST begin one blank line after the description.
 - Use the imperative mood in the subject line
-- Keep the body short and concise (omit it entirely if not useful)"
-  "A prompt adapted from Conventional Commits (https://www.conventionalcommits.org/en/v1.0.0/).")
+- Keep the body short and concise (omit it entirely if not useful)")
+   )
+  "Alist of custom commit styles for gptel-magit. Each element is a cons cell
+  where the CAR is the style name (string) and the CDR is the prompt string."
+  :type '(repeat (cons (string :tag "Style Name") (string :tag "Prompt Text")))
+  :group 'gptel-magit)
+
+(defun gptel-magit-set-commit-style (style-name)
+  "Set the `gptel-magit-commit-prompt` based on STYLE-NAME.
+STYLE-NAME should be one of the names defined in
+`gptel-magit-commit-styles-alist`.
+
+Interactively, prompts the user to choose a style."
+  (interactive
+   (let ((available-styles (mapcar #'car gptel-magit-commit-styles-alist)))
+     (list (completing-read "Choose commit style for gptel-magit: "
+                            available-styles
+                            nil t nil nil))))
+
+  (let* ((selected-pair (assoc style-name gptel-magit-commit-styles-alist))
+         (prompt-to-use (cdr selected-pair)))
+    (if selected-pair
+        (progn
+          (setq gptel-magit-commit-prompt prompt-to-use)
+          (message "gptel-magit commit style set to '%s'." style-name))
+      (error "Invalid commit style name: %S. Not found in `gptel-magit-commit-styles-alist`." style-name))))
 
 (defcustom gptel-magit-commit-prompt
-  gptel-magit-prompt-conventional-commits
+  ;;changed to a 'cdr' with a 'assoc'
+  (cdr (assoc "Conventional Commits" gptel-magit-commit-styles-alist))
   "The prompt to use for generating a commit message.
 The prompt should consider that the input will be a diff of all
 staged changes."
