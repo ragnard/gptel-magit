@@ -102,7 +102,7 @@ See `gptel-backend` for documentation."
   "Format commit message MESSAGE nicely."
   (with-temp-buffer
     (insert message)
-    (text-mode)
+    (markdown-mode)
     (setq fill-column git-commit-summary-max-length)
     (fill-region (point-min) (point-max))
     (buffer-string)))
