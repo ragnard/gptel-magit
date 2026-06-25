@@ -119,7 +119,10 @@ Respects configured model/backend options."
 (defun gptel-magit--generate (callback)
   "Generate a commit message for current magit repo.
 Invokes CALLBACK with the generated message when done."
-  (let ((diff (magit-git-output "diff" "--cached")))
+  (let* ((diff (magit-git-output "diff" "--cached"))
+         (diff (if (string-empty-p diff)
+                   (magit-git-output "diff" "head~..head")
+                 diff)))
     (gptel-magit--request diff
       :system gptel-magit-commit-prompt
       :context nil
