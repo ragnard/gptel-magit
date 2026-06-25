@@ -121,7 +121,7 @@ Respects configured model/backend options."
 Invokes CALLBACK with the generated message when done."
   (let* ((diff (magit-git-output "diff" "--cached"))
          (diff (if (string-empty-p diff)
-                   (magit-git-output "show")
+                   (magit-git-output "diff" "head~..head")
                  diff)))
     (gptel-magit--request diff
       :system gptel-magit-commit-prompt
