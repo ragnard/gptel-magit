@@ -9,6 +9,7 @@ LLM-powered functionality.
 Functionality is provided for:
 
 - Generating commit messages
+- Providing optional rationale to guide generated commit messages
 - Explaining diffs
 
 * Installation
@@ -32,6 +33,18 @@ You can generate a commit message in two ways:
    commit with a pre-generated message.
 2. In an already started git-commit buffer, you can press =M-g= to
    generate a message.
+
+To provide extra context about why the change was made, generate with a
+rationale instead:
+
+1. In the magit transient commit buffer, press =r= to enter a rationale
+   before creating the commit.
+2. In an already started git-commit buffer, press =M-r= to enter a
+   rationale before generating the message.
+
+Submit the rationale buffer with =C-c C-c=, or cancel it with =C-c C-k=.
+Leaving the buffer empty generates the commit message without additional
+rationale.
 
 ** Diff explanation
 
